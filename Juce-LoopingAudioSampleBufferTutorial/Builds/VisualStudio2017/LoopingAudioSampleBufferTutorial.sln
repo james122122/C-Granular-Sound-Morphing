@@ -1,0 +1,20 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2017
+
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LoopingAudioSampleBufferTutorial - App", "LoopingAudioSampleBufferTutorial_App.vcxproj", "{BC2E0AD9-3783-4072-638C-3DD30F7DB59C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BC2E0AD9-3783-4072-638C-3DD30F7DB59C}.Debug|x64.ActiveCfg = Debug|x64
+		{BC2E0AD9-3783-4072-638C-3DD30F7DB59C}.Debug|x64.Build.0 = Debug|x64
+		{BC2E0AD9-3783-4072-638C-3DD30F7DB59C}.Release|x64.ActiveCfg = Release|x64
+		{BC2E0AD9-3783-4072-638C-3DD30F7DB59C}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
