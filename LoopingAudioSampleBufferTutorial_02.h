@@ -56,6 +56,10 @@ public:
         addAndMakeVisible (openButton);
         openButton.setButtonText ("Open...");
         openButton.onClick = [this] { openButtonClicked(); };
+        
+        addAndMakeVisible (openButton2);
+        openButton2.setButtonText ("Open2...");
+        openButton2.onClick = [this] { openButton2Clicked(); };
 
         addAndMakeVisible (clearButton);
         clearButton.setButtonText ("Clear");
@@ -65,19 +69,13 @@ public:
         levelSlider.setRange (0.0, 1.0);
         levelSlider.onValueChange = [this] { currentLevel = (float) levelSlider.getValue(); };
         
-        addAndMakeVisible (randomSlider);
-        randomSlider.setRange (0.0, 1.0);
-        randomSlider.onValueChange = [this] { currentRandom = (float) randomSlider.getValue(); };
-
-        addAndMakeVisible (rampLenSlider);
-        rampLenSlider.setRange (0, 256);
+        addAndMakeVisible (levelSlider2);
+        levelSlider2.setRange (0.0, 1.0);
+        levelSlider2.onValueChange = [this] { currentLevel = (float) levelSlider2.getValue(); };
 
         setSize (300, 200);
 
         formatManager.registerBasicFormats();
-        
-        //Seed the random object
-        random.setSeed(Time::currentTimeMillis());
     }
 
     ~MainContentComponent()
@@ -85,7 +83,11 @@ public:
         shutdownAudio();
     }
 
-    void prepareToPlay (int, double) override {}
+    void prepareToPlay (int, double) override {
+        
+        
+        
+    }
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
     {
@@ -98,73 +100,40 @@ public:
         auto outputSamplesRemaining = bufferToFill.numSamples;
         auto outputSamplesOffset = bufferToFill.startSample;
 
-        //A crass looping mechanism to remove the complexity of the loop below.
-        //If the file buffer wants more samples than are available in the file buffer,
-        //just loop back to zero right away instead of reading samples to the end then
-        //looping to the start. This means we'll lose a small bunch of samples at the very
-        //end of the file each loop, but worth it to make the loop below a bit easier to follow
-        if((position + bufferToFill.numSamples) >= fileBuffer.getNumSamples()) {
-            position = 0;
-        }
-        
-        auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;
-        auto samplesThisTime = jmin (outputSamplesRemaining, bufferSamplesRemaining);
-
-        //Create a read position based on the correct read position, plus an
-        //offset depending on value of the random slider
-        int readPosition = position;
-        if(currentRandom != 0.f) {
-            int randomRange = (int)((float)fileBuffer.getNumSamples() * currentRandom);
-            readPosition = position + random.nextInt(randomRange);
-            //Wrap it around to make sure it doesn't exceed the file buffer size
-            if(readPosition >= fileBuffer.getNumSamples() - samplesThisTime) {
-                readPosition = (readPosition + samplesThisTime) % fileBuffer.getNumSamples();
-            }
-        }
-        
-        for (auto channel = 0; channel < numOutputChannels; ++channel)
+        while (outputSamplesRemaining > 0)
         {
-            bufferToFill.buffer->copyFrom (channel,
-                                           outputSamplesOffset,
-                                           fileBuffer,
-                                           channel % numInputChannels,
-                                           readPosition,
-                                           samplesThisTime);
+            auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;
+            auto samplesThisTime = jmin (outputSamplesRemaining, bufferSamplesRemaining);
 
-            //Apply the gain from the volume slider (do it as a ramp from the previous
-            //slider value to avoid 'zipping' or sudden change in ampltitude)
-            bufferToFill.buffer->applyGainRamp (channel, outputSamplesOffset, samplesThisTime, startLevel, level);
-            
-        }
+            for (auto channel = 0; channel < numOutputChannels; ++channel)
+            {
+                bufferToFill.buffer->copyFrom (channel,
+                                               outputSamplesOffset,
+                                               fileBuffer,
+                                               channel % numInputChannels,
+                                               position,
+                                               samplesThisTime);
 
-        outputSamplesRemaining -= samplesThisTime;
-        outputSamplesOffset += samplesThisTime;
-        position += samplesThisTime;
+                bufferToFill.buffer->applyGainRamp (channel, outputSamplesOffset, samplesThisTime, startLevel, level);
+            }
 
-        if (position == fileBuffer.getNumSamples()) {
+            outputSamplesRemaining -= samplesThisTime;
+            outputSamplesOffset += samplesThisTime;
+            position += samplesThisTime;
+
+            if (position == fileBuffer.getNumSamples())
                 position = 0;
         }
-        
-        //Also apply a window to the sample to smooth out square amplitude window
-        //Get the ramp length from the slider
-        int rampLen = (int)rampLenSlider.getValue();
-        
-        int totalSamples = bufferToFill.numSamples;
-        for (auto channel = 0; channel < numOutputChannels; ++channel) {
-            //Fade in
-            bufferToFill.buffer->applyGainRamp(channel, 0, rampLen, 0.f, 1.f);
-            //Fade out
-            bufferToFill.buffer->applyGainRamp
-            (channel, totalSamples - rampLen, rampLen, 1.f, 0.f);
-        }
-
 
         previousLevel = level;
+        
+        
     }
 
     void releaseResources() override
     {
         fileBuffer.setSize (0, 0);
+        fileBuffer2.setSize (0, 0);
     }
 
     void resized() override
@@ -172,8 +141,8 @@ public:
         openButton .setBounds (10, 10, getWidth() - 20, 20);
         clearButton.setBounds (10, 40, getWidth() - 20, 20);
         levelSlider.setBounds (10, 70, getWidth() - 20, 20);
-        randomSlider.setBounds (10, 100, getWidth() - 20, 20);
-        rampLenSlider.setBounds (10, 130, getWidth() - 20, 20);
+        openButton2 .setBounds (10, 100, getWidth() - 20, 20);
+        levelSlider2.setBounds (10, 160, getWidth() - 20, 20);
     }
 
 private:
@@ -208,10 +177,46 @@ private:
                 }
                 else
                 {
-                    // handle the error that the file is 2 seconds or longer..
+                    // handle the error that the file is 5 seconds or longer..
                 }
             }
         }
+        
+    }
+    void openButton2Clicked()
+    {
+        shutdownAudio();
+    FileChooser chooser2 ("Select a Wave file shorter than 2 seconds to play...",
+                          File::nonexistent,
+                          "*.wav");
+    
+    if (chooser2.browseForFileToOpen())
+    {
+        auto file2 = chooser2.getResult();
+        std::unique_ptr<AudioFormatReader> reader2 (formatManager.createReaderFor (file2)); // [2]
+        
+        if (reader2.get() != nullptr)
+        {
+            auto duration2 = reader2->lengthInSamples / reader2->sampleRate;                 // [3]
+            
+            if (duration2 < 5)
+            {
+                fileBuffer2.setSize (reader2->numChannels, (int) reader2->lengthInSamples);  // [4]
+                reader2->read (&fileBuffer2,                                                // [5]
+                               0,                                                          //  [5.1]
+                               (int) reader2->lengthInSamples,                              //  [5.2]
+                               0,                                                          //  [5.3]
+                               true,                                                       //  [5.4]
+                               true);                                                      //  [5.5]
+                position2 = 0;                                                             // [6]
+                //setAudioChannels (0, reader2->numChannels); //this line causes runtime error                                // [7]
+            }
+            else
+            {
+                // handle the error that the file is 5 seconds or longer..
+            }
+        }
+    }
     }
 
     void clearButtonClicked()
@@ -221,19 +226,16 @@ private:
 
     //==========================================================================
     TextButton openButton;
+    TextButton openButton2;
     TextButton clearButton;
     Slider levelSlider;
-    Slider randomSlider;
-    Slider rampLenSlider;
+    Slider levelSlider2;
 
     AudioFormatManager formatManager;
-    AudioSampleBuffer fileBuffer;
-    int position = 0;
+    AudioSampleBuffer fileBuffer, fileBuffer2;
+    int position = 0, position2 = 0;
 
-    float currentLevel = 0.0f, previousLevel = 0.0f;
-    float currentRandom = 0.f;
-    
-    Random random;
+    float currentLevel = 0.0f, previousLevel = 0.0f, currentLevel2 = 0.0f, previousLevel2 = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
